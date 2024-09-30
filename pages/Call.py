@@ -44,7 +44,7 @@ def format_as_table(data):
         st.markdown("#### 🛑 **Summary Recommendation**")
         st.info(data["summary"])
 
-# Main function to fetch response from ChatGPT and format it beautifully
+# Main function to fetch response from ChatGPT and format it based on session state
 def get_treatment_flow_with_code(prescriptions, symptoms):
     # Check if symptoms are empty
     if not symptoms:
@@ -75,38 +75,13 @@ def get_treatment_flow_with_code(prescriptions, symptoms):
             messages=[{"role": "user", "content": prompt}]
         )
         
-        # Get the response from ChatGPT
+        # Extract the response from ChatGPT and process it
         assistant_response = response.choices[0].message.content
-        
-        # Display formatted response in a table layout
         format_as_table({
-            "symptoms": symptoms,
-            "causes": [
-                # This will come from ChatGPT; example data is used here for format
-                {
-                    "name": "Kidney Disease",
-                    "likelihood": "65",
-                    "severity": "moderate",
-                    "diagnostic_tests": ["Blood Test", "Urine Test", "Ultrasound"],
-                    "treatments": ["Fluid Therapy", "Dietary Management", "Medication"]
-                },
-                {
-                    "name": "Diabetes",
-                    "likelihood": "45",
-                    "severity": "severe",
-                    "diagnostic_tests": ["Blood Glucose Test", "Urine Glucose Test", "A1C Test"],
-                    "treatments": ["Insulin Therapy", "Low-Carb Diet"]
-                },
-                {
-                    "name": "Urinary Tract Infection",
-                    "likelihood": "80",
-                    "severity": "mild",
-                    "diagnostic_tests": ["Urine Culture", "Blood Test"],
-                    "treatments": ["Antibiotics", "Hydration Therapy"]
-                }
-            ],
-            "drug_interactions": "⚠️ Be cautious when using insulin and antibiotics together, as it may cause hypoglycemia.",
-            "summary": "📝 Begin by testing for the most likely causes, starting with a urine culture for UTI, followed by blood glucose tests for diabetes, and kidney function tests. Treatment should be based on confirmed diagnoses."
+            "symptoms": symptoms,  # Use symptoms from the session state
+            "causes": response.choices[0].message.get('causes', []),
+            "drug_interactions": response.choices[0].message.get('drug_interactions', ''),
+            "summary": response.choices[0].message.get('summary', '')
         })
     
     except Exception as e:
