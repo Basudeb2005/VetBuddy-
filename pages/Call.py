@@ -1,56 +1,51 @@
 import openai
 import streamlit as st
 
-# Fetch your OpenAI API key securely from Streamlit Secrets
+
+
+# Load environment variables (for secret management)
+
+
+# Fetch your OpenAI API key from environment variables
 openai.api_key = st.secrets["OPENAI_API_KEY"]
-
-# Function to display the response in a structured and readable format
+# Function to format the response in a clear tabular format
 def format_as_table(data):
-    # Section: Medical Suggestion Heading
-    st.markdown("### 🐾 **VetBuddy Medical Report**")
-    st.markdown("Here’s a structured breakdown of the pet's **symptoms**, **possible causes**, **diagnostic tests**, **treatments**, and **warnings**.")
+    table = """
+    ### 🐾 Medical Suggestion:
+    Below is a detailed breakdown of the symptoms, possible causes, diagnostic tests, treatments, and warnings.
+    
+    | **Section**              | **Details**               |
+    |--------------------------|---------------------------|
+    """
 
-    # Section: Symptoms
+    # Add symptoms to the table
     if data.get("symptoms"):
-        st.markdown("#### 🩺 **Symptoms**")
-        st.markdown(f"- {', '.join(f'🩺 {symptom}' for symptom in data['symptoms'])}")
-    else:
-        st.warning("⚠️ **No symptoms entered. Please provide symptoms to generate a treatment flow.**")
-        return  # Stop the function here if no symptoms are provided
+        table += "| **Symptoms**             | " + ", ".join(f"🩺 {symptom}" for symptom in data["symptoms"]) + " |\n"
 
-    # Section: Possible Causes
+    # Add possible causes with likelihood
     if data.get("causes"):
-        st.markdown("#### 🧠 **Possible Causes with Likelihood**")
-        causes_table = []
         for cause in data["causes"]:
-            causes_table.append([cause["name"], f"{cause['likelihood']}%", cause["severity"].capitalize()])
-        st.table(causes_table)  # Clean, structured table without numbering
-    
-    # Section: Diagnostic Tests and Treatments
+            table += f"| **{cause['name']}**      | {cause['likelihood']}% chance |\n"
+
+    # Add diagnostic tests and treatments for each cause
     for cause in data.get("causes", []):
-        st.markdown(f"##### 🧪 **Diagnostic Tests for {cause['name']}**")
-        st.markdown(f"- **Tests**: {', '.join(cause['diagnostic_tests'])}")
+        table += f"| **{cause['name']}** Diagnostic Tests:\n"
+        if cause.get("diagnostic_tests"):
+            table += "| **🧪 Diagnostic Tests**      | " + ", ".join(f"🔍 {test}" for test in cause["diagnostic_tests"]) + " |\n"
+        if cause.get("treatments"):
+            table += "| **💊 Treatment Options**     | " + ", ".join(f"💉 {treatment}" for treatment in cause["treatments"]) + " |\n"
+        if cause.get("drug_interactions"):
+            table += "| **⚠️ Drug Interaction Warning** | " + cause["drug_interactions"] + " |\n"
 
-        st.markdown(f"##### 💉 **Treatment Options for {cause['name']}**")
-        st.markdown(f"- **Treatments**: {', '.join(cause['treatments'])}")
-
-    # Section: Drug Interaction Warning
-    if data.get("drug_interactions"):
-        st.markdown("#### ⚠️ **Drug Interaction Warning**")
-        st.warning(data["drug_interactions"])
-
-    # Section: Summary Recommendation
+    # Add summary recommendation
     if data.get("summary"):
-        st.markdown("#### 🛑 **Summary Recommendation**")
-        st.info(data["summary"])
+        table += "| **🛑 Summary Recommendation** | " + data["summary"] + " |\n"
 
-# Main function to fetch response from ChatGPT and format it based on session state
+    return table
+
+# Function to fetch response from ChatGPT
 def get_treatment_flow_with_code(prescriptions, symptoms):
-    # Check if symptoms are empty
-    if not symptoms:
-        return st.warning("⚠️ **Please enter symptoms to generate a treatment flow.**")
-    
-    # Extract prescription details from session state
+    # Extract prescription details
     prescription_details = []
     for prescription in prescriptions:
         details = f"{prescription.get('medicine_name', 'N/A')} - {prescription.get('combination', 'N/A')} - {prescription.get('times_per_day', 'N/A')} times per day"
@@ -75,23 +70,21 @@ def get_treatment_flow_with_code(prescriptions, symptoms):
             messages=[{"role": "user", "content": prompt}]
         )
         
-        # Extract the response from ChatGPT and process it
+        # Get the response from ChatGPT
         assistant_response = response.choices[0].message.content
-        format_as_table({
-            "symptoms": symptoms,  # Use symptoms from the session state
-            "causes": response.choices[0].message.get('causes', []),
-            "drug_interactions": response.choices[0].message.get('drug_interactions', ''),
-            "summary": response.choices[0].message.get('summary', '')
-        })
+        
+        # Assuming ChatGPT returns a structured output, we would process it into the table
+        # Here, we assume the ChatGPT response is already structured as required.
+        return assistant_response  # Direct response from ChatGPT
     
     except Exception as e:
-        st.error(f"⚠️ Error generating treatment flow: {e}")
+        return f"Error: {e}"
 
-# Main Streamlit entry point
 if __name__ == "__main__":
-    # Dynamically get prescriptions and symptoms from session state
+    # Get the session data for prescriptions and symptoms
     prescriptions = st.session_state.get("prescriptions", [])
     symptoms = st.session_state.get("symptoms_list", [])
 
-    # Fetch and display the treatment flow based on the current session state
-    get_treatment_flow_with_code(prescriptions, symptoms)
+    # Fetch and display the treatment flow
+    response = get_treatment_flow_with_code(prescriptions, symptoms)
+    st.markdown(response)  # Display the response in a table format
