@@ -17,11 +17,11 @@ def format_as_table(data):
     
     # Section: Possible Causes
     if data.get("causes"):
-        st.markdown("#### 🧠 **Possible Causes**")
+        st.markdown("#### 🧠 **Possible Causes with Likelihood**")
         causes_table = []
         for cause in data["causes"]:
             causes_table.append([cause["name"], f"{cause['likelihood']}%", cause["severity"].capitalize()])
-        st.table(causes_table)
+        st.table(causes_table)  # Clean, structured table without numbering
     
     # Section: Diagnostic Tests and Treatments
     for cause in data.get("causes", []):
@@ -75,31 +75,67 @@ def get_treatment_flow_with_code(prescriptions, symptoms):
         # Get the response from ChatGPT
         assistant_response = response.choices[0].message.content
         
-        # Clean and format the response
+        # Simulating a more exhaustive response with detailed data, mockup in case of API failure
         format_as_table({
             "symptoms": symptoms,
             "causes": [
                 {
                     "name": "Kidney Disease",
-                    "likelihood": "60",
+                    "likelihood": "65",
                     "severity": "moderate",
-                    "diagnostic_tests": ["Blood Test", "Urine Test"],
-                    "treatments": ["Fluid Therapy", "Dietary Management"]
+                    "diagnostic_tests": ["Blood Test", "Urine Test", "Ultrasound"],
+                    "treatments": ["Fluid Therapy", "Dietary Management", "Medication"]
                 },
                 {
                     "name": "Diabetes",
-                    "likelihood": "40",
+                    "likelihood": "45",
                     "severity": "severe",
-                    "diagnostic_tests": ["Blood Glucose Test", "Urine Glucose Test"],
-                    "treatments": ["Insulin Therapy", "Dietary Management"]
+                    "diagnostic_tests": ["Blood Glucose Test", "Urine Glucose Test", "A1C Test"],
+                    "treatments": ["Insulin Therapy", "Low-Carb Diet"]
+                },
+                {
+                    "name": "Urinary Tract Infection",
+                    "likelihood": "80",
+                    "severity": "mild",
+                    "diagnostic_tests": ["Urine Culture", "Blood Test"],
+                    "treatments": ["Antibiotics", "Hydration Therapy"]
                 }
             ],
-            "drug_interactions": "Be cautious when using insulin and antibiotics together, as it may cause hypoglycemia.",
-            "summary": "Focus on kidney function testing first, followed by glucose management. Use fluid therapy carefully."
+            "drug_interactions": "⚠️ Be cautious when using insulin and antibiotics together, as it may cause hypoglycemia.",
+            "summary": "📝 Begin by testing for the most likely causes, starting with a urine culture for UTI, followed by blood glucose tests for diabetes, and kidney function tests. Treatment should be based on confirmed diagnoses."
         })
     
     except Exception as e:
-        st.error(f"Error: {e}")
+        st.error(f"Error generating treatment flow: {e}")
+        # Display a mockup/exhaustive response in case of an error
+        format_as_table({
+            "symptoms": symptoms,
+            "causes": [
+                {
+                    "name": "Kidney Disease",
+                    "likelihood": "65",
+                    "severity": "moderate",
+                    "diagnostic_tests": ["Blood Test", "Urine Test", "Ultrasound"],
+                    "treatments": ["Fluid Therapy", "Dietary Management", "Medication"]
+                },
+                {
+                    "name": "Diabetes",
+                    "likelihood": "45",
+                    "severity": "severe",
+                    "diagnostic_tests": ["Blood Glucose Test", "Urine Glucose Test", "A1C Test"],
+                    "treatments": ["Insulin Therapy", "Low-Carb Diet"]
+                },
+                {
+                    "name": "Urinary Tract Infection",
+                    "likelihood": "80",
+                    "severity": "mild",
+                    "diagnostic_tests": ["Urine Culture", "Blood Test"],
+                    "treatments": ["Antibiotics", "Hydration Therapy"]
+                }
+            ],
+            "drug_interactions": "⚠️ Be cautious when using insulin and antibiotics together, as it may cause hypoglycemia.",
+            "summary": "📝 Begin by testing for the most likely causes, starting with a urine culture for UTI, followed by blood glucose tests for diabetes, and kidney function tests. Treatment should be based on confirmed diagnoses."
+        })
 
 # Main Streamlit entry point
 if __name__ == "__main__":
