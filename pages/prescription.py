@@ -35,7 +35,7 @@ def add_prescription():
         prescription = parse_prescription(f"{species};{breed};{quick_entry}")
         if prescription:
             st.session_state["prescriptions"].append(prescription)
-            st.experimental_rerun()
+            st.rerun()
 
     # Detailed entry for prescriptions
     st.markdown("### Detailed Entry")
@@ -58,7 +58,7 @@ def add_prescription():
             "additional_notes": additional_notes
         }
         st.session_state["prescriptions"].append(prescription)
-        st.experimental_rerun()
+        st.rerun()
 
 # Parse prescription from quick entry
 def parse_prescription(quick_entry):
@@ -104,7 +104,7 @@ def display_prescriptions():
             cols[7].write(prescription['additional_notes'])
             if cols[8].button("❌", key=f"remove_{idx}_{prescription['medicine_name']}"):
                 st.session_state["prescriptions"].pop(idx)
-                st.experimental_rerun()
+                st.rerun()
 
 # Main function for the app
 def show_page1():
