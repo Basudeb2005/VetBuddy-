@@ -14,7 +14,10 @@ def format_as_table(data):
     if data.get("symptoms"):
         st.markdown("#### 🩺 **Symptoms**")
         st.markdown(f"- {', '.join(f'🩺 {symptom}' for symptom in data['symptoms'])}")
-    
+    else:
+        st.warning("⚠️ **No symptoms entered. Please provide symptoms to generate a treatment flow.**")
+        return  # Stop the function here if no symptoms are provided
+
     # Section: Possible Causes
     if data.get("causes"):
         st.markdown("#### 🧠 **Possible Causes with Likelihood**")
@@ -47,7 +50,7 @@ def get_treatment_flow_with_code(prescriptions, symptoms):
     if not symptoms:
         return st.warning("⚠️ **Please enter symptoms to generate a treatment flow.**")
     
-    # Extract prescription details
+    # Extract prescription details from session state
     prescription_details = []
     for prescription in prescriptions:
         details = f"{prescription.get('medicine_name', 'N/A')} - {prescription.get('combination', 'N/A')} - {prescription.get('times_per_day', 'N/A')} times per day"
@@ -75,10 +78,11 @@ def get_treatment_flow_with_code(prescriptions, symptoms):
         # Get the response from ChatGPT
         assistant_response = response.choices[0].message.content
         
-        # Simulating a more exhaustive response with detailed data, mockup in case of API failure
+        # Display formatted response in a table layout
         format_as_table({
             "symptoms": symptoms,
             "causes": [
+                # This will come from ChatGPT; example data is used here for format
                 {
                     "name": "Kidney Disease",
                     "likelihood": "65",
@@ -107,35 +111,7 @@ def get_treatment_flow_with_code(prescriptions, symptoms):
     
     except Exception as e:
         st.error(f"Error generating treatment flow: {e}")
-        # Display a mockup/exhaustive response in case of an error
-        format_as_table({
-            "symptoms": symptoms,
-            "causes": [
-                {
-                    "name": "Kidney Disease",
-                    "likelihood": "65",
-                    "severity": "moderate",
-                    "diagnostic_tests": ["Blood Test", "Urine Test", "Ultrasound"],
-                    "treatments": ["Fluid Therapy", "Dietary Management", "Medication"]
-                },
-                {
-                    "name": "Diabetes",
-                    "likelihood": "45",
-                    "severity": "severe",
-                    "diagnostic_tests": ["Blood Glucose Test", "Urine Glucose Test", "A1C Test"],
-                    "treatments": ["Insulin Therapy", "Low-Carb Diet"]
-                },
-                {
-                    "name": "Urinary Tract Infection",
-                    "likelihood": "80",
-                    "severity": "mild",
-                    "diagnostic_tests": ["Urine Culture", "Blood Test"],
-                    "treatments": ["Antibiotics", "Hydration Therapy"]
-                }
-            ],
-            "drug_interactions": "⚠️ Be cautious when using insulin and antibiotics together, as it may cause hypoglycemia.",
-            "summary": "📝 Begin by testing for the most likely causes, starting with a urine culture for UTI, followed by blood glucose tests for diabetes, and kidney function tests. Treatment should be based on confirmed diagnoses."
-        })
+        st.warning("⚠️ **Failed to generate treatment flow. Please try again later or ensure the API key is correct.**")
 
 # Main Streamlit entry point
 if __name__ == "__main__":
