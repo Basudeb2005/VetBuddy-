@@ -2,7 +2,7 @@ import openai
 import streamlit as st
 
 # Your OpenAI API key
-openai.api_key = "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"
+openai.api_key = "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"
 
 # Function to format the response in a clear tabular format
 def format_as_table(data):
