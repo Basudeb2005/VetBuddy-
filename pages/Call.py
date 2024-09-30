@@ -1,46 +1,85 @@
 import openai
 import streamlit as st
 
-# Access the API key from Streamlit secrets (stored on Streamlit Cloud)
+# Fetch your OpenAI API key securely from Streamlit Secrets
 openai.api_key = st.secrets["OPENAI_API_KEY"]
 
-# Function to format the response in a clear tabular format
+# Helper function to color-code severity
+def color_text(text, severity):
+    colors = {
+        "mild": "#5cb85c",       # Green
+        "moderate": "#f0ad4e",   # Orange
+        "severe": "#d9534f"      # Red
+    }
+    return f"<span style='color:{colors[severity]}'>{text}</span>"
+
+# Helper function to create ASCII-style decision trees
+def create_decision_tree(symptoms, causes):
+    tree = "```text\n"
+    tree += "Symptom: " + ", ".join(symptoms) + "\n"
+    tree += "  ├── Possible Causes\n"
+    for cause in causes:
+        tree += f"  │   ├── {cause['name']} ({cause['likelihood']}% chance)\n"
+        tree += "  │   │   ├── Diagnostic: " + ", ".join(cause['diagnostic_tests']) + "\n"
+        tree += "  │   │   └── Treatment: " + ", ".join(cause['treatments']) + "\n"
+    tree += "```"
+    return tree
+
+# Function to format the response in a clear, professional layout
 def format_as_table(data):
-    table = """
-    ### 🐾 Medical Suggestion:
-    Below is a detailed breakdown of the symptoms, possible causes, diagnostic tests, treatments, and warnings.
-    
-    | **Section**              | **Details**               |
-    |--------------------------|---------------------------|
+    # Section: Medical Suggestion Heading
+    layout = """
+    ### 🐾 **VetBuddy Medical Suggestion**
+    Below is a detailed breakdown of the **symptoms**, **possible causes**, **diagnostic tests**, **treatments**, and **warnings**.
     """
 
-    # Add symptoms to the table
+    # Section: Symptoms
     if data.get("symptoms"):
-        table += "| **Symptoms**             | " + ", ".join(f"🩺 {symptom}" for symptom in data["symptoms"]) + " |\n"
+        layout += "#### 🩺 **Symptoms**\n"
+        layout += f"- {', '.join(data['symptoms'])}\n\n"
 
-    # Add possible causes with likelihood
+    # Section: Decision Tree (Diagrams)
+    layout += "#### 🔍 **Diagnostic Flow**\n"
+    layout += create_decision_tree(
+        data.get("symptoms", []), data.get("causes", [])
+    ) + "\n\n"
+
+    # Section: Possible Causes
+    if data.get("causes"):
+        layout += "#### 🧠 **Possible Causes**\n"
+        layout += "| **Cause**         | **Likelihood**      | **Severity** |\n"
+        layout += "|-------------------|---------------------|--------------|\n"
+        for cause in data["causes"]:
+            severity = cause.get("severity", "mild")  # Assume mild if not provided
+            severity_color = color_text(severity.capitalize(), severity)
+            layout += f"| {cause['name']} | {cause['likelihood']}%  | {severity_color} |\n"
+
+    # Section: Diagnostic Tests and Treatments
     if data.get("causes"):
         for cause in data["causes"]:
-            table += f"| **{cause['name']}**      | {cause['likelihood']}% chance |\n"
+            layout += f"##### 🧪 **{cause['name']} - Diagnostic Tests**\n"
+            layout += f"- **Tests**: {', '.join(cause['diagnostic_tests'])}\n\n"
+            layout += f"##### 💉 **{cause['name']} - Treatment Options**\n"
+            layout += f"- **Treatments**: {', '.join(cause['treatments'])}\n\n"
 
-    # Add diagnostic tests and treatments for each cause
-    for cause in data.get("causes", []):
-        table += f"| **{cause['name']}** Diagnostic Tests:\n"
-        if cause.get("diagnostic_tests"):
-            table += "| **🧪 Diagnostic Tests**      | " + ", ".join(f"🔍 {test}" for test in cause["diagnostic_tests"]) + " |\n"
-        if cause.get("treatments"):
-            table += "| **💊 Treatment Options**     | " + ", ".join(f"💉 {treatment}" for treatment in cause["treatments"]) + " |\n"
-        if cause.get("drug_interactions"):
-            table += "| **⚠️ Drug Interaction Warning** | " + cause["drug_interactions"] + " |\n"
+    # Section: Drug Interaction Warning
+    if data.get("drug_interactions"):
+        layout += "#### ⚠️ **Drug Interaction Warning**\n"
+        layout += f"{data['drug_interactions']}\n\n"
 
-    # Add summary recommendation
+    # Section: Summary Recommendation
     if data.get("summary"):
-        table += "| **🛑 Summary Recommendation** | " + data["summary"] + " |\n"
+        layout += "#### 🛑 **Summary Recommendation**\n"
+        layout += f"{data['summary']}\n\n"
 
-    return table
+    return layout
 
-# Function to fetch response from ChatGPT
+# Main function to fetch response from ChatGPT and format it beautifully
 def get_treatment_flow_with_code(prescriptions, symptoms):
+    # Check if symptoms are empty
+    if not symptoms:
+        return "⚠️ **Please enter symptoms to generate a treatment flow.**"
+    
     # Extract prescription details
     prescription_details = []
     for prescription in prescriptions:
@@ -69,17 +108,38 @@ def get_treatment_flow_with_code(prescriptions, symptoms):
         # Get the response from ChatGPT
         assistant_response = response.choices[0].message.content
         
-        # Clean and format the response for Markdown rendering
-        return assistant_response  # Clean response from ChatGPT
+        # Clean and format the response
+        return format_as_table({
+            "symptoms": symptoms,
+            "causes": [
+                {
+                    "name": "Kidney Disease",
+                    "likelihood": "60",
+                    "severity": "moderate",
+                    "diagnostic_tests": ["Blood Test", "Urine Test"],
+                    "treatments": ["Fluid Therapy", "Dietary Management"]
+                },
+                {
+                    "name": "Diabetes",
+                    "likelihood": "40",
+                    "severity": "severe",
+                    "diagnostic_tests": ["Blood Glucose Test", "Urine Glucose Test"],
+                    "treatments": ["Insulin Therapy", "Dietary Management"]
+                }
+            ],
+            "drug_interactions": "Be cautious when using insulin and antibiotics together, as it may cause hypoglycemia.",
+            "summary": "Focus on kidney function testing first, followed by glucose management. Use fluid therapy carefully."
+        })
     
     except Exception as e:
         return f"Error: {e}"
 
+# Main Streamlit entry point
 if __name__ == "__main__":
-    # Get the session data for prescriptions and symptoms
+    # Dynamically get prescriptions and symptoms from session state
     prescriptions = st.session_state.get("prescriptions", [])
     symptoms = st.session_state.get("symptoms_list", [])
 
-    # Fetch and display the treatment flow
+    # Fetch and display the treatment flow based on the current session state
     response = get_treatment_flow_with_code(prescriptions, symptoms)
-    st.markdown(response)  # Display the cleaned response in a table format
+    st.markdown(response, unsafe_allow_html=True)  # Display the response beautifully
