@@ -14,7 +14,7 @@ def show_page1():
     # Reset button to clear the page state
     if st.button("Reset Page"):
         reset_session()
-        st.experimental_rerun()
+        st.rerun()
 
     # Prescription Entry Section (assuming functions exist for these)
     add_prescription()  # This should handle adding a prescription
@@ -32,7 +32,7 @@ def show_page1():
         new_symptom = new_symptom.strip()
         if new_symptom and new_symptom.lower() not in (s.lower() for s in st.session_state['symptoms_list']):
             st.session_state['symptoms_list'].append(new_symptom)
-            st.experimental_rerun()  # Refresh the page
+            st.rerun()  # Refresh the page
 
     # Display symptoms
     if st.session_state['symptoms_list']:
@@ -41,7 +41,7 @@ def show_page1():
             cols[0].markdown(f"✅ {symptom}")
             if cols[1].button("❌", key=f"remove_symptom_{i}"):
                 st.session_state['symptoms_list'].pop(i)
-                st.experimental_rerun()
+                st.rerun()
 
     # # Suggestions and Treatment Flow
     # st.markdown("<h3 style='text-align: center;'>💡 Suggestions and Treatment Flows</h3>", unsafe_allow_html=True)
