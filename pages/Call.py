@@ -4,81 +4,48 @@ import streamlit as st
 # Fetch your OpenAI API key securely from Streamlit Secrets
 openai.api_key = st.secrets["OPENAI_API_KEY"]
 
-# Helper function to color-code severity
-def color_text(text, severity):
-    colors = {
-        "mild": "#5cb85c",       # Green
-        "moderate": "#f0ad4e",   # Orange
-        "severe": "#d9534f"      # Red
-    }
-    return f"<span style='color:{colors[severity]}'>{text}</span>"
-
-# Helper function to create ASCII-style decision trees
-def create_decision_tree(symptoms, causes):
-    tree = "```text\n"
-    tree += "Symptom: " + ", ".join(symptoms) + "\n"
-    tree += "  ├── Possible Causes\n"
-    for cause in causes:
-        tree += f"  │   ├── {cause['name']} ({cause['likelihood']}% chance)\n"
-        tree += "  │   │   ├── Diagnostic: " + ", ".join(cause['diagnostic_tests']) + "\n"
-        tree += "  │   │   └── Treatment: " + ", ".join(cause['treatments']) + "\n"
-    tree += "```"
-    return tree
-
-# Function to format the response in a clear, professional layout
+# Function to display the response in a structured and readable format
 def format_as_table(data):
     # Section: Medical Suggestion Heading
-    layout = """
-    ### 🐾 **VetBuddy Medical Suggestion**
-    Below is a detailed breakdown of the **symptoms**, **possible causes**, **diagnostic tests**, **treatments**, and **warnings**.
-    """
+    st.markdown("### 🐾 **VetBuddy Medical Report**")
+    st.markdown("Here’s a structured breakdown of the pet's **symptoms**, **possible causes**, **diagnostic tests**, **treatments**, and **warnings**.")
 
     # Section: Symptoms
     if data.get("symptoms"):
-        layout += "#### 🩺 **Symptoms**\n"
-        layout += f"- {', '.join(data['symptoms'])}\n\n"
-
-    # Section: Decision Tree (Diagrams)
-    layout += "#### 🔍 **Diagnostic Flow**\n"
-    layout += create_decision_tree(
-        data.get("symptoms", []), data.get("causes", [])
-    ) + "\n\n"
-
+        st.markdown("#### 🩺 **Symptoms**")
+        st.markdown(f"- {', '.join(f'🩺 {symptom}' for symptom in data['symptoms'])}")
+    
     # Section: Possible Causes
     if data.get("causes"):
-        layout += "#### 🧠 **Possible Causes**\n"
-        layout += "| **Cause**         | **Likelihood**      | **Severity** |\n"
-        layout += "|-------------------|---------------------|--------------|\n"
+        st.markdown("#### 🧠 **Possible Causes**")
+        causes_table = []
         for cause in data["causes"]:
-            severity = cause.get("severity", "mild")  # Assume mild if not provided
-            severity_color = color_text(severity.capitalize(), severity)
-            layout += f"| {cause['name']} | {cause['likelihood']}%  | {severity_color} |\n"
-
+            causes_table.append([cause["name"], f"{cause['likelihood']}%", cause["severity"].capitalize()])
+        st.table(causes_table)
+    
     # Section: Diagnostic Tests and Treatments
-    if data.get("causes"):
-        for cause in data["causes"]:
-            layout += f"##### 🧪 **{cause['name']} - Diagnostic Tests**\n"
-            layout += f"- **Tests**: {', '.join(cause['diagnostic_tests'])}\n\n"
-            layout += f"##### 💉 **{cause['name']} - Treatment Options**\n"
-            layout += f"- **Treatments**: {', '.join(cause['treatments'])}\n\n"
+    for cause in data.get("causes", []):
+        st.markdown(f"##### 🧪 **Diagnostic Tests for {cause['name']}**")
+        st.markdown(f"- **Tests**: {', '.join(cause['diagnostic_tests'])}")
+
+        st.markdown(f"##### 💉 **Treatment Options for {cause['name']}**")
+        st.markdown(f"- **Treatments**: {', '.join(cause['treatments'])}")
 
     # Section: Drug Interaction Warning
     if data.get("drug_interactions"):
-        layout += "#### ⚠️ **Drug Interaction Warning**\n"
-        layout += f"{data['drug_interactions']}\n\n"
+        st.markdown("#### ⚠️ **Drug Interaction Warning**")
+        st.warning(data["drug_interactions"])
 
     # Section: Summary Recommendation
     if data.get("summary"):
-        layout += "#### 🛑 **Summary Recommendation**\n"
-        layout += f"{data['summary']}\n\n"
-
-    return layout
+        st.markdown("#### 🛑 **Summary Recommendation**")
+        st.info(data["summary"])
 
 # Main function to fetch response from ChatGPT and format it beautifully
 def get_treatment_flow_with_code(prescriptions, symptoms):
     # Check if symptoms are empty
     if not symptoms:
-        return "⚠️ **Please enter symptoms to generate a treatment flow.**"
+        return st.warning("⚠️ **Please enter symptoms to generate a treatment flow.**")
     
     # Extract prescription details
     prescription_details = []
@@ -109,7 +76,7 @@ def get_treatment_flow_with_code(prescriptions, symptoms):
         assistant_response = response.choices[0].message.content
         
         # Clean and format the response
-        return format_as_table({
+        format_as_table({
             "symptoms": symptoms,
             "causes": [
                 {
@@ -132,7 +99,7 @@ def get_treatment_flow_with_code(prescriptions, symptoms):
         })
     
     except Exception as e:
-        return f"Error: {e}"
+        st.error(f"Error: {e}")
 
 # Main Streamlit entry point
 if __name__ == "__main__":
@@ -141,5 +108,4 @@ if __name__ == "__main__":
     symptoms = st.session_state.get("symptoms_list", [])
 
     # Fetch and display the treatment flow based on the current session state
-    response = get_treatment_flow_with_code(prescriptions, symptoms)
-    st.markdown(response, unsafe_allow_html=True)  # Display the response beautifully
+    get_treatment_flow_with_code(prescriptions, symptoms)
