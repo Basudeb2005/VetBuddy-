@@ -110,8 +110,7 @@ def get_treatment_flow_with_code(prescriptions, symptoms):
         })
     
     except Exception as e:
-        st.error(f"Error generating treatment flow: {e}")
-        st.warning("⚠️ **Failed to generate treatment flow. Please try again later or ensure the API key is correct.**")
+        st.error(f"⚠️ Error generating treatment flow: {e}")
 
 # Main Streamlit entry point
 if __name__ == "__main__":
