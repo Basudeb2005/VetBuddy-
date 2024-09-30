@@ -1,5 +1,5 @@
 streamlit      # Streamlit for creating the web app
-openai        # OpenAI Python library to call ChatGPT API
+openai==0.28        # OpenAI Python library to call ChatGPT API
 pandas         # Pandas for handling data (if needed)
 numpy         # NumPy (for any array operations)
 
