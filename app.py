@@ -29,7 +29,7 @@ def show_login_page():
     if st.button("🚀 Login"):
         if email and password:  # Simple validation
             st.session_state['logged_in'] = True
-            st.experimental_rerun()
+            st.rerun()
         else:
             st.error("Please enter both email and password.")
 
