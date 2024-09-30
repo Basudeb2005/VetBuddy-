@@ -1,0 +1,5 @@
+streamlit==1.18.1       # Streamlit for creating the web app
+openai==0.27.0          # OpenAI Python library to call ChatGPT API
+pandas==1.5.3           # Pandas for handling data (if needed)
+numpy==1.23.5           # NumPy (for any array operations)
+requests==2.28.1        # Requests (to handle any HTTP requests)
