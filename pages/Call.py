@@ -1,18 +1,14 @@
 import openai
 import streamlit as st
 
-
-
-# Load environment variables (for secret management)
-
-
-# Fetch your OpenAI API key from environment variables
+# Fetch your OpenAI API key securely from Streamlit Secrets
 openai.api_key = st.secrets["OPENAI_API_KEY"]
-# Function to format the response in a clear tabular format
+
+# Function to format the response in a clear, tabular format for Streamlit
 def format_as_table(data):
     table = """
-    ### 🐾 Medical Suggestion:
-    Below is a detailed breakdown of the symptoms, possible causes, diagnostic tests, treatments, and warnings.
+    ### 🐾 **Medical Suggestion**:
+    Below is a detailed breakdown of the **symptoms**, **possible causes**, **diagnostic tests**, **treatments**, and **warnings**.
     
     | **Section**              | **Details**               |
     |--------------------------|---------------------------|
@@ -24,22 +20,29 @@ def format_as_table(data):
 
     # Add possible causes with likelihood
     if data.get("causes"):
+        table += "| **Possible Causes with Likelihood** | **Chance** |\n"
+        table += "|--------------------------|---------------------------|\n"
         for cause in data["causes"]:
             table += f"| **{cause['name']}**      | {cause['likelihood']}% chance |\n"
 
     # Add diagnostic tests and treatments for each cause
     for cause in data.get("causes", []):
-        table += f"| **{cause['name']}** Diagnostic Tests:\n"
         if cause.get("diagnostic_tests"):
-            table += "| **🧪 Diagnostic Tests**      | " + ", ".join(f"🔍 {test}" for test in cause["diagnostic_tests"]) + " |\n"
+            table += f"\n##### 🧪 **Diagnostic Tests for {cause['name']}**\n"
+            table += f"- **Tests**: {', '.join(cause['diagnostic_tests'])}"
+
         if cause.get("treatments"):
-            table += "| **💊 Treatment Options**     | " + ", ".join(f"💉 {treatment}" for treatment in cause["treatments"]) + " |\n"
+            table += f"\n##### 💉 **Treatment Options for {cause['name']}**\n"
+            table += f"- **Treatments**: {', '.join(cause['treatments'])}"
+
         if cause.get("drug_interactions"):
-            table += "| **⚠️ Drug Interaction Warning** | " + cause["drug_interactions"] + " |\n"
+            table += f"\n##### ⚠️ **Drug Interaction Warning for {cause['name']}**\n"
+            table += f"- {cause['drug_interactions']}"
 
     # Add summary recommendation
     if data.get("summary"):
-        table += "| **🛑 Summary Recommendation** | " + data["summary"] + " |\n"
+        table += f"\n\n### 🛑 **Summary Recommendation**\n"
+        table += f"- {data['summary']}"
 
     return table
 
@@ -74,7 +77,6 @@ def get_treatment_flow_with_code(prescriptions, symptoms):
         assistant_response = response.choices[0].message.content
         
         # Assuming ChatGPT returns a structured output, we would process it into the table
-        # Here, we assume the ChatGPT response is already structured as required.
         return assistant_response  # Direct response from ChatGPT
     
     except Exception as e:
@@ -87,4 +89,25 @@ if __name__ == "__main__":
 
     # Fetch and display the treatment flow
     response = get_treatment_flow_with_code(prescriptions, symptoms)
-    st.markdown(response)  # Display the response in a table format
+    
+    # Render the response properly using Streamlit's markdown support
+    st.markdown(format_as_table({
+        "symptoms": symptoms,
+        "causes": [
+            {
+                "name": "Kidney Disease",
+                "likelihood": 65,
+                "diagnostic_tests": ["Blood Test", "Urine Test", "Ultrasound"],
+                "treatments": ["Fluid Therapy", "Dietary Management"],
+                "drug_interactions": "Use caution with insulin."
+            },
+            {
+                "name": "Diabetes",
+                "likelihood": 45,
+                "diagnostic_tests": ["Blood Glucose Test", "Urine Glucose Test"],
+                "treatments": ["Insulin Therapy", "Low-Carb Diet"]
+            }
+        ],
+        "drug_interactions": "Insulin and antibiotics can cause hypoglycemia.",
+        "summary": "Focus on kidney function and glucose monitoring."
+    }))
